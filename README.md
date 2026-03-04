@@ -100,7 +100,6 @@ python build_exe.py
 
 ## 注意事项
 
-- `config.json` 包含敏感信息，已添加到 `.gitignore`，请勿提交到GitHub
 - 使用 `config.example.json` 作为配置模板
 - 支持多个API Key负载均衡，用逗号分隔即可
 
