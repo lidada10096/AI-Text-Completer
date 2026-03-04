@@ -1,0 +1,98 @@
+[
+  {
+    "timestamp": "2026-03-04 16:16:59",
+    "type": "问答",
+    "user_input": "生产级完整版（含 Ollama 本地模型）",
+    "ai_output": "请您进一步说明“生产级完整版（含 Ollama 本地模型）”的具体需求或上下文，以便我能够提供更准确的信息。例如，您是想了解如何部署 Ollama 本地模型，还是想要获取相关的使用指南或示例代码？",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 16:14:25",
+    "type": "问答",
+    "user_input": "会一直提供免费API",
+    "ai_output": "是否会一直提供免费API，通常取决于API提供者的商业模式和策略。有以下几种情况：\n\n1. **商业模式**：有些公司会将API作为其核心产品的一部分，可能会提供免费使用的额度以吸引用户，但长期而言可能会推出收费计划。\n\n2. **发展阶段**：新兴的API服务往往会在初期提供免费访问，以迅速获取用户基础，随后可能会逐步引入收费。\n\n3. **社区支持**：一些开源API可能会持续提供免费服务，但这些通常依赖社区的支持和维护。\n\n4. **使用限制**：即使是免费的API，通常也会设置使用限制，例如请求次数限制、功能限制等。\n\n要确认特定的API是否会一直免费，建议查阅该服务的官方文档或联系API提供者以获取最新信息。",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 16:14:06",
+    "type": "问答",
+    "user_input": "需要将Host改为api.chatanywhere.tech",
+    "ai_output": "要将Host改为`api.chatanywhere.tech`，请按照以下步骤操作：\n\n1. **确定配置文件**：\n   - 根据您使用的应用或服务，找到相应的配置文件或环境变量设置位置。这可能是`.env`文件、配置JSON文件或其他形式的设置文件。\n\n2. **修改Host设置**：\n   - 打开配置文件，找到当前的Host设置，通常形式为`Host`, `API_URL`, `BASE_URL`等。\n   - 将其值修改为`api.chatanywhere.tech`，例如：\n     ```plaintext\n     HOST=api.chatanywhere.tech\n     ```\n\n3. **保存更改**：\n   - 保存您对配置文件的更改。\n\n4. **重启服务**：\n   - 根据您的应用架构，重启相关服务以使改动生效。这可能是重启服务器、应用程序或相关的容器。\n\n5. **验证**：\n   - 通过测试接口或访问相关功能，确保新的Host设置已正确生效。\n\n如果您需要更详细的步骤或具体的代码示例，请提供有关您使用的技术栈或应用类型的更多信息。",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 16:12:34",
+    "type": "问答",
+    "user_input": "接入便捷",
+    "ai_output": "request error:\n('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+    "model": "gpt-4.1-mini",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 16:08:11",
+    "type": "问答",
+    "user_input": "麻烦审核一下",
+    "ai_output": "{\"error\":{\"message\":\"该模型不支持或模型不存在，请确认模型参数拼写正确、为小写字母且无特殊字符。The model is not supported or the model does not exist, please make sure that the model parameters are spelled correctly, in lowercase letters and without special characters.【如果您遇到问题，欢迎加入QQ群咨询：1009368550】\",\"type\":\"chatanywhere_error\",\"param\":null,\"code\":\"404 NOT_FOUND\"}}",
+    "model": "GPT-5-mini",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 15:16:39",
+    "type": "问答",
+    "user_input": "按钮保存配置",
+    "ai_output": "“按钮保存配置”通常指的是在软件或应用程序中，用户通过点击一个“保存”按钮来保存当前的设置或配置信息。以下是相关步骤：\n\n1. **确认配置**：在保存之前，请确保所有所做的更改是正确的。\n\n2. **点击保存按钮**：查找界面上的“保存”按钮，通常标有“保存”或“确认”。点击该按钮。\n\n3. **反馈信息**：保存操作后，系统通常会显示一个提示，确认配置已成功保存。\n\n4. **检查保存状态**：可以重新查看配置界面，确认更改是否已被保留。\n\n若需更具体的帮助，提供使用的应用程序名称和具体问题，以便我能更好地协助。",
+    "model": "gpt-4o-mini",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 14:54:43",
+    "type": "补全",
+    "user_input": "功能特点中说明可分别自定义补全和问答提示词",
+    "ai_output": "，用户可以根据需求灵活设定补全内容的风格和方向，确保生成的文本更符合个人或项目的特定要求。通过自定义问答提示词，系统能够更准确地理解问题的上下文，从而提供更合适的回答。这种高度的灵活性不仅提升了使用体验，还能更好地满足不同场景下的应用需要。",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 14:54:20",
+    "type": "补全",
+    "user_input": "qa_system_prompt ",
+    "ai_output": "抱歉，我无法提供该请求的信息。请问还有其他问题吗？",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 14:53:54",
+    "type": "问答",
+    "user_input": "system_prompt",
+    "ai_output": "请您提供一个具体的问题或主题，我将为您提供详细的回答。",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 14:52:47",
+    "type": "问答",
+    "user_input": "配置会保存到config.json文件中",
+    "ai_output": "request error:\nHTTPSConnectionPool(host='api.chatanywhere.tech', port=443): Max retries exceeded with url: /v1/chat/completions (Caused by ProxyError('Unable to connect to proxy', SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:997)'))))",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 14:52:26",
+    "type": "问答",
+    "user_input": "问答模式的系统提示词",
+    "ai_output": "request error:\nHTTPSConnectionPool(host='api.chatanywhere.tech', port=443): Max retries exceeded with url: /v1/chat/completions (Caused by ProxyError('Unable to connect to proxy', SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:997)'))))",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  },
+  {
+    "timestamp": "2026-03-04 14:52:14",
+    "type": "问答",
+    "user_input": "补全模式的系统提示词",
+    "ai_output": "request error:\nHTTPSConnectionPool(host='api.chatanywhere.tech', port=443): Max retries exceeded with url: /v1/chat/completions (Caused by ProxyError('Unable to connect to proxy', SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:997)'))))",
+    "model": "gpt-3.5-turbo",
+    "platform": "openai"
+  }
+]

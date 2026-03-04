@@ -40,17 +40,45 @@ def check_single_instance():
         print(f"检查单实例失败: {e}")
         return None
 
-# 配色方案
+
+# 现代化深色配色方案
 COLORS = {
-    'bg': '#f5f5f5',
-    'card_bg': '#ffffff',
-    'primary': '#2196F3',
-    'primary_hover': '#1976D2',
-    'text': '#333333',
-    'text_secondary': '#666666',
-    'border': '#e0e0e0',
-    'success': '#4CAF50',
-    'warning': '#FF9800'
+    # 主色调 - 深蓝紫色渐变风格
+    'bg': '#0f172a',                    # 深蓝灰背景
+    'bg_secondary': '#1e293b',          # 次要背景
+    'card_bg': '#334155',               # 卡片背景
+    'card_hover': '#475569',            # 卡片悬停
+    
+    # 强调色 - 科技蓝紫渐变
+    'primary': '#6366f1',               # 主色 Indigo
+    'primary_hover': '#818cf8',         # 主色悬停
+    'primary_dark': '#4f46e5',          # 主色深
+    'accent': '#8b5cf6',                # 强调色 Violet
+    'accent_hover': '#a78bfa',          # 强调色悬停
+    
+    # 功能色
+    'success': '#10b981',               # 成功绿
+    'success_hover': '#34d399',         # 成功绿悬停
+    'warning': '#f59e0b',               # 警告橙
+    'error': '#ef4444',                 # 错误红
+    'info': '#3b82f6',                  # 信息蓝
+    
+    # 文字色
+    'text': '#f8fafc',                  # 主文字 - 近白
+    'text_secondary': '#cbd5e1',        # 次要文字
+    'text_muted': '#94a3b8',            # 弱化文字
+    'text_disabled': '#64748b',         # 禁用文字
+    
+    # 边框与分隔
+    'border': '#475569',                # 边框
+    'border_focus': '#6366f1',          # 焦点边框
+    'border_error': '#ef4444',          # 错误边框
+    'divider': '#334155',               # 分隔线
+    
+    # 渐变与特效
+    'gradient_start': '#6366f1',        # 渐变起始
+    'gradient_end': '#8b5cf6',          # 渐变结束
+    'glow': 'rgba(99, 102, 241, 0.3)',  # 发光效果
 }
 
 
@@ -66,11 +94,11 @@ def load_config():
         "model": "gpt-3.5-turbo",
         "max_tokens": 2000,
         "auto_start": False,
-        "system_prompt": "你是一个AI文本补全助手，请根据用户输入的上下文进行智能补全。"
+        "system_prompt": "你是一个AI文本补全助手，请根据用户输入的上下文进行智能补全。",
+        "qa_system_prompt": "你是一个AI问答助手，请针对用户的问题给出详细、准确的回答。\n\n回答要求：\n1. 直接回答问题，不要添加无关内容\n2. 条理清晰，层次分明\n3. 如果问题不清晰，可以要求用户补充信息"
     }
     
     if not os.path.exists(CONFIG_FILE):
-        # 配置文件不存在，创建默认配置
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(default_config, f, indent=2, ensure_ascii=False)
@@ -84,7 +112,6 @@ def load_config():
     try:
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             config = json.load(f)
-            # 初始化负载均衡器（如果配置了多个API key）
             api_key = config.get("api_key", "")
             if api_key:
                 from api_provider import APIProvider
@@ -112,6 +139,7 @@ model = config.get("model")
 max_tokens = config.get("max_tokens")
 auto_start = config.get("auto_start")
 system_prompt = config.get("system_prompt")
+qa_system_prompt = config.get("qa_system_prompt")
 
 # 设置代理环境变量
 if https_proxy:
@@ -119,29 +147,52 @@ if https_proxy:
 
 
 class ModernButton(tk.Button):
-    """现代化按钮"""
+    """现代化渐变按钮"""
     def __init__(self, master=None, **kwargs):
+        # 提取自定义参数
+        self.button_type = kwargs.pop('button_type', 'primary')
         super().__init__(master, **kwargs)
+        
+        # 根据按钮类型设置颜色
+        if self.button_type == 'primary':
+            bg_color = COLORS['primary']
+            hover_color = COLORS['primary_hover']
+        elif self.button_type == 'success':
+            bg_color = COLORS['success']
+            hover_color = COLORS['success_hover']
+        elif self.button_type == 'secondary':
+            bg_color = COLORS['card_bg']
+            hover_color = COLORS['card_hover']
+        else:
+            bg_color = COLORS['primary']
+            hover_color = COLORS['primary_hover']
+        
+        self.bg_color = bg_color
+        self.hover_color = hover_color
+        
         self.config(
-            bg=COLORS['primary'],
-            fg='white',
-            font=('Microsoft YaHei', 10, 'bold'),
+            bg=bg_color,
+            fg='white' if self.button_type != 'secondary' else COLORS['text'],
+            font=('Segoe UI', 10, 'bold'),
             relief='flat',
-            padx=15,
-            pady=5,
+            padx=20,
+            pady=8,
             cursor='hand2',
-            activebackground=COLORS['primary_hover'],
-            activeforeground='white',
-            borderwidth=0
+            activebackground=hover_color,
+            activeforeground='white' if self.button_type != 'secondary' else COLORS['text'],
+            borderwidth=0,
+            highlightthickness=0
         )
+        
+        # 添加圆角效果（通过边框）
         self.bind('<Enter>', self.on_enter)
         self.bind('<Leave>', self.on_leave)
-    
+        
     def on_enter(self, e):
-        self.config(bg=COLORS['primary_hover'])
-    
+        self.config(bg=self.hover_color)
+        
     def on_leave(self, e):
-        self.config(bg=COLORS['primary'])
+        self.config(bg=self.bg_color)
 
 
 class ModernEntry(tk.Entry):
@@ -149,25 +200,82 @@ class ModernEntry(tk.Entry):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
         self.config(
-            font=('Microsoft YaHei', 9),
-            relief='solid',
-            borderwidth=1,
-            highlightthickness=1,
+            font=('Segoe UI', 10),
+            relief='flat',
+            borderwidth=0,
+            highlightthickness=2,
             highlightbackground=COLORS['border'],
-            highlightcolor=COLORS['primary']
+            highlightcolor=COLORS['border_focus'],
+            insertbackground=COLORS['text'],
+            selectbackground=COLORS['primary'],
+            selectforeground='white',
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text']
         )
+        
+        # 焦点事件
+        self.bind('<FocusIn>', self.on_focus_in)
+        self.bind('<FocusOut>', self.on_focus_out)
+        
+    def on_focus_in(self, e):
+        self.config(highlightcolor=COLORS['border_focus'])
+        
+    def on_focus_out(self, e):
+        self.config(highlightcolor=COLORS['border'])
+
+
+class ModernText(scrolledtext.ScrolledText):
+    """现代化文本框"""
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.config(
+            font=('Segoe UI', 10),
+            relief='flat',
+            borderwidth=0,
+            highlightthickness=2,
+            highlightbackground=COLORS['border'],
+            highlightcolor=COLORS['border_focus'],
+            insertbackground=COLORS['text'],
+            selectbackground=COLORS['primary'],
+            selectforeground='white',
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text'],
+            padx=12,
+            pady=10
+        )
+        
+        # 配置滚动条样式
+        self.vbar = self.vbar if hasattr(self, 'vbar') else None
+        if self.vbar:
+            self.vbar.config(
+                troughcolor=COLORS['bg_secondary'],
+                bg=COLORS['card_bg'],
+                activebackground=COLORS['primary']
+            )
 
 
 class CardFrame(tk.Frame):
-    """卡片式框架"""
+    """现代化卡片框架"""
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
         self.config(
             bg=COLORS['card_bg'],
             relief='flat',
             borderwidth=0,
-            padx=10,
-            pady=8
+            padx=16,
+            pady=12
+        )
+
+
+class SectionLabel(tk.Label):
+    """章节标题标签"""
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.config(
+            font=('Segoe UI', 11, 'bold'),
+            bg=COLORS['card_bg'],
+            fg=COLORS['primary'],
+            anchor='w'
         )
 
 
@@ -237,12 +345,10 @@ class SystemTray:
         menu = win32gui.CreatePopupMenu()
         win32gui.AppendMenu(menu, win32con.MF_STRING, 1000, "打开程序UI界面")
         win32gui.AppendMenu(menu, win32con.MF_SEPARATOR, 0, "")
-        win32gui.AppendMenu(menu, win32con.MF_STRING, 1001, "开机自启动")
-        win32gui.AppendMenu(menu, win32con.MF_SEPARATOR, 0, "")
         win32gui.AppendMenu(menu, win32con.MF_STRING, 1002, "退出程序")
-        
+
         pos = win32gui.GetCursorPos()
-        
+
         win32gui.SetForegroundWindow(self.hwnd)
         cmd = win32gui.TrackPopupMenu(
             menu,
@@ -252,11 +358,9 @@ class SystemTray:
             self.hwnd,
             None
         )
-        
+
         if cmd == 1000:
             self.app.show_window()
-        elif cmd == 1001:
-            self.app.toggle_auto_start()
         elif cmd == 1002:
             self.app.quit()
             
@@ -272,9 +376,22 @@ class AI_Text_Completer_App:
     def __init__(self, master):
         self.master = master
         self.master.title("AI Text Completer")
-        self.master.geometry("700x680")
+        self.master.geometry("1200x620")
         self.master.configure(bg=COLORS['bg'])
-        self.master.resizable(False, False)  # 禁止调整大小
+        self.master.resizable(False, False)
+        
+        # 居中显示
+        self.master.update_idletasks()
+        width = self.master.winfo_width()
+        height = self.master.winfo_height()
+        x = (self.master.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.master.winfo_screenheight() // 2) - (height // 2)
+        self.master.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # 前台显示
+        self.master.lift()
+        self.master.attributes('-topmost', True)
+        self.master.after_idle(self.master.attributes, '-topmost', False)
 
         # 从配置中读取的值
         self.platform = PLATFORM
@@ -287,8 +404,9 @@ class AI_Text_Completer_App:
         self.max_tokens = max_tokens
         self.auto_start = auto_start
         self.system_prompt = system_prompt
+        self.qa_system_prompt = qa_system_prompt
         
-        # 保存问答窗口引用，防止被垃圾回收
+        # 保存问答窗口引用
         self.qa_windows = []
         
         # 创建系统托盘
@@ -304,8 +422,7 @@ class AI_Text_Completer_App:
         # 绑定快捷键
         self.setup_hotkey()
         
-        # 检测是否是开机自启动（通过检查启动参数）
-        # 开机自启动时通常没有控制台窗口，且工作目录不同
+        # 检测是否是开机自启动
         is_auto_start = self.check_if_auto_start()
         
         # 只有在开机自启动时才最小化到托盘
@@ -314,67 +431,62 @@ class AI_Text_Completer_App:
     
     def check_if_auto_start(self):
         """检测是否是开机自启动"""
-        # 方法1：检查启动方式
-        # 如果是双击打开，通常当前工作目录是exe所在目录
-        # 如果是开机自启动，工作目录可能是系统目录
-        
-        # 方法2：检查是否有特定的启动参数
-        # 开机自启动通常没有特殊参数
-        # 我们可以检查启动时间，开机自启动通常在系统启动后不久运行
-        
-        # 方法3：检查父进程
-        # 开机自启动的父进程通常是explorer或系统进程
-        
-        # 这里使用简单的方法：检查启动参数中是否包含 --minimized
         import sys
         return '--minimized' in sys.argv or '-m' in sys.argv
         
     def create_ui(self):
-        """创建紧凑的用户界面，无需滚动"""
+        """创建现代化双列UI界面"""
         # 主容器
         main_frame = tk.Frame(self.master, bg=COLORS['bg'])
-        main_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        main_frame.pack(fill='both', expand=True, padx=20, pady=10)
         
-        # 标题区域 - 更紧凑
-        title_frame = CardFrame(main_frame)
-        title_frame.pack(fill='x', pady=(0, 5))
+        # 标题区域
+        title_frame = tk.Frame(main_frame, bg=COLORS['bg'])
+        title_frame.pack(fill='x', pady=(0, 10))
         
-        tk.Label(title_frame, text="AI Text Completer", font=('Microsoft YaHei', 18, 'bold'), 
-                bg=COLORS['card_bg'], fg=COLORS['primary']).pack(pady=(5, 2))
-        tk.Label(title_frame, text="AI智能文本补全与问答工具", font=('Microsoft YaHei', 10), 
-                bg=COLORS['card_bg'], fg=COLORS['text_secondary']).pack()
+        tk.Label(title_frame, text="AI Text Completer", 
+                font=('Segoe UI', 20, 'bold'), 
+                bg=COLORS['bg'], fg=COLORS['primary']).pack()
         
-        # 使用说明 - 更紧凑
-        help_frame = CardFrame(main_frame)
-        help_frame.pack(fill='x', pady=(0, 5))
+        tk.Label(title_frame, text="智能文本补全与问答助手", 
+                font=('Segoe UI', 11), 
+                bg=COLORS['bg'], fg=COLORS['text_secondary']).pack(pady=(3, 0))
         
-        tk.Label(help_frame, text="使用说明", font=('Microsoft YaHei', 11, 'bold'), 
-                bg=COLORS['card_bg'], fg=COLORS['text']).pack(anchor='w', pady=(0, 3))
+        # 快捷键提示
+        shortcut_text = "Alt+`  文本补全  •  Alt+1  AI问答  •  长按Ctrl  停止生成"
+        tk.Label(title_frame, text=shortcut_text, 
+                font=('Segoe UI', 9), 
+                bg=COLORS['bg'], fg=COLORS['text_muted']).pack(pady=(5, 0))
         
-        help_text = "Alt+`: AI补全 | Alt+1: AI问答 | 长按Ctrl停止 | 托盘图标管理"
-        tk.Label(help_frame, text=help_text, font=('Microsoft YaHei', 9), 
-                bg=COLORS['card_bg'], fg=COLORS['text_secondary']).pack(anchor='w')
+        # 双列布局容器
+        content_frame = tk.Frame(main_frame, bg=COLORS['bg'])
+        content_frame.pack(fill='both', expand=True, pady=(0, 10))
+        content_frame.grid_columnconfigure(0, weight=1)
+        content_frame.grid_columnconfigure(1, weight=1)
+        
+        # 左列 - API设置和参数
+        left_column = tk.Frame(content_frame, bg=COLORS['bg'])
+        left_column.grid(row=0, column=0, sticky='nsew', padx=(0, 10))
         
         # API设置区域
-        api_frame = CardFrame(main_frame)
-        api_frame.pack(fill='x', pady=(0, 5))
+        api_card = CardFrame(left_column)
+        api_card.pack(fill='x', pady=(0, 10))
         
-        tk.Label(api_frame, text="API设置", font=('Microsoft YaHei', 11, 'bold'), 
-                bg=COLORS['card_bg'], fg=COLORS['text']).pack(anchor='w', pady=(0, 5))
+        SectionLabel(api_card, text="⚙️ API 设置").pack(anchor='w', pady=(0, 8))
         
         # AI平台选择
-        platform_frame = tk.Frame(api_frame, bg=COLORS['card_bg'])
-        platform_frame.pack(fill='x', pady=2)
+        platform_frame = tk.Frame(api_card, bg=COLORS['card_bg'])
+        platform_frame.pack(fill='x', pady=(0, 6))
         
-        tk.Label(platform_frame, text="AI平台:", font=('Microsoft YaHei', 9), 
-                bg=COLORS['card_bg'], fg=COLORS['text'], width=10, anchor='w').pack(side=tk.LEFT)
+        tk.Label(platform_frame, text="AI平台", font=('Segoe UI', 10),
+                bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=10, anchor='w').pack(side=tk.LEFT)
         
         self.platform_list = APIProvider.get_platform_names()
         self.platform_var = tk.StringVar(value=self.platform if self.platform else "openai")
         
         self.cmb_platform = ttk.Combobox(platform_frame, values=list(self.platform_list.values()), 
-                                         state="readonly", width=25, font=('Microsoft YaHei', 9))
-        self.cmb_platform.pack(side=tk.LEFT, padx=(5, 0))
+                                         state="readonly", width=25, font=('Segoe UI', 10))
+        self.cmb_platform.pack(side=tk.LEFT, padx=(10, 0))
         
         if self.platform and self.platform in self.platform_list:
             self.cmb_platform.set(self.platform_list[self.platform])
@@ -383,60 +495,84 @@ class AI_Text_Completer_App:
         
         self.cmb_platform.bind('<<ComboboxSelected>>', self.on_platform_changed)
         
-        # API Key (支持多个key，用逗号分隔)
-        self.create_form_text_compact(api_frame, "API Key:", "apikey", self.apikey)
+        # API Key
+        self.create_form_text_compact(api_card, "API Key", "apikey", self.apikey)
+        
         # Base URL
-        self.create_form_row_compact(api_frame, "Base URL:", "baseurl", self.base_url)
-        # Model
-        self.create_form_row_compact(api_frame, "模型:", "model", self.model)
+        self.create_form_row_compact(api_card, "Base URL", "baseurl", self.base_url)
         
-        # 参数设置区域 - 使用2x2网格
-        param_frame = CardFrame(main_frame)
-        param_frame.pack(fill='x', pady=(0, 5))
+        # 模型选择
+        model_frame = tk.Frame(api_card, bg=COLORS['card_bg'])
+        model_frame.pack(fill='x', pady=(0, 5))
         
-        tk.Label(param_frame, text="参数设置", font=('Microsoft YaHei', 11, 'bold'), 
-                bg=COLORS['card_bg'], fg=COLORS['text']).pack(anchor='w', pady=(0, 5))
+        tk.Label(model_frame, text="模型", font=('Segoe UI', 10),
+                bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=10, anchor='w').pack(side=tk.LEFT)
         
-        params_grid = tk.Frame(param_frame, bg=COLORS['card_bg'])
+        self.model_var = tk.StringVar(value=self.model if self.model else "gpt-3.5-turbo")
+        self.cmb_model = ttk.Combobox(model_frame, textvariable=self.model_var, 
+                                     state="normal", width=32, font=('Segoe UI', 10))
+        self.cmb_model.pack(side=tk.LEFT, padx=(10, 0), fill='x', expand=True)
+        
+        self.btn_refresh_models = ModernButton(model_frame, text="刷新", 
+                                           command=self.refresh_models, width=8,
+                                           button_type='secondary')
+        self.btn_refresh_models.pack(side=tk.LEFT, padx=(10, 0))
+        
+        # 初始加载默认模型
+        self.cmb_model['values'] = ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"]
+        self.cmb_model.set(self.model if self.model else "gpt-3.5-turbo")
+        
+        # 参数设置区域
+        param_card = CardFrame(left_column)
+        param_card.pack(fill='x', pady=(0, 10))
+        
+        SectionLabel(param_card, text="🔧 参数设置").pack(anchor='w', pady=(0, 12))
+        
+        params_grid = tk.Frame(param_card, bg=COLORS['card_bg'])
         params_grid.pack(fill='x')
         
         # 2x2网格布局
-        self.create_param_input_compact(params_grid, "Temperature:", "temperature", 
-                                       str(self.temperature) if self.temperature else "", 0, 0)
-        self.create_param_input_compact(params_grid, "补全字数:", "number", 
-                                       str(self.complete_number) if self.complete_number else "", 0, 1)
-        self.create_param_input_compact(params_grid, "Max Tokens:", "maxtokens", 
-                                       str(self.max_tokens) if self.max_tokens else "", 1, 0)
-        self.create_param_input_compact(params_grid, "代理设置:", "proxy", 
+        self.create_param_input_compact(params_grid, "Temperature", "temperature", 
+                                       str(self.temperature) if self.temperature else "0.9", 0, 0)
+        self.create_param_input_compact(params_grid, "补全字数", "number", 
+                                       str(self.complete_number) if self.complete_number else "150", 0, 1)
+        self.create_param_input_compact(params_grid, "Max Tokens", "maxtokens", 
+                                       str(self.max_tokens) if self.max_tokens else "2000", 1, 0)
+        self.create_param_input_compact(params_grid, "代理设置", "proxy", 
                                        str(self.https_proxy) if self.https_proxy else "", 1, 1)
         
-        # 系统提示词 - 更紧凑
-        prompt_frame = CardFrame(main_frame)
-        prompt_frame.pack(fill='x', pady=(0, 5))
+        # 右列 - 提示词设置
+        right_column = tk.Frame(content_frame, bg=COLORS['bg'])
+        right_column.grid(row=0, column=1, sticky='nsew', padx=(10, 0))
         
-        tk.Label(prompt_frame, text="系统提示词", font=('Microsoft YaHei', 11, 'bold'), 
-                bg=COLORS['card_bg'], fg=COLORS['text']).pack(anchor='w', pady=(0, 3))
+        # 提示词设置区域
+        prompt_card = CardFrame(right_column)
+        prompt_card.pack(fill='both', expand=True)
         
-        self.txt_prompt = scrolledtext.ScrolledText(
-            prompt_frame, 
-            height=4, 
-            font=('Microsoft YaHei', 9),
-            relief='solid',
-            borderwidth=1,
-            highlightthickness=1,
-            highlightbackground=COLORS['border'],
-            highlightcolor=COLORS['primary'],
-            wrap=tk.WORD
-        )
-        self.txt_prompt.pack(fill='x', pady=(0, 5))
+        SectionLabel(prompt_card, text="💬 提示词设置").pack(anchor='w', pady=(0, 8))
+        
+        # 补全提示词
+        tk.Label(prompt_card, text="补全提示词", font=('Segoe UI', 10, 'bold'),
+                bg=COLORS['card_bg'], fg=COLORS['text']).pack(anchor='w', pady=(0, 5))
+        
+        self.txt_prompt = ModernText(prompt_card, height=6, wrap=tk.WORD)
+        self.txt_prompt.pack(fill='x', pady=(0, 8))
         self.txt_prompt.insert('1.0', str(self.system_prompt) if self.system_prompt else "")
         
-        # 选项和按钮区域
+        # 问答提示词
+        tk.Label(prompt_card, text="问答提示词", font=('Segoe UI', 10, 'bold'),
+                bg=COLORS['card_bg'], fg=COLORS['text']).pack(anchor='w', pady=(0, 5))
+        
+        self.txt_qa_prompt = ModernText(prompt_card, height=6, wrap=tk.WORD)
+        self.txt_qa_prompt.pack(fill='x')
+        self.txt_qa_prompt.insert('1.0', str(self.qa_system_prompt) if self.qa_system_prompt else "")
+        
+        # 底部操作区域
         bottom_frame = tk.Frame(main_frame, bg=COLORS['bg'])
-        bottom_frame.pack(fill='x', pady=(0, 5))
+        bottom_frame.pack(fill='x', pady=(5, 0))
         
         # 左侧：开机自启动选项
-        option_frame = tk.Frame(bottom_frame, bg=COLORS['card_bg'], padx=10, pady=5)
+        option_frame = tk.Frame(bottom_frame, bg=COLORS['card_bg'], padx=12, pady=6)
         option_frame.pack(side=tk.LEFT, fill='y')
         
         self.auto_start_var = tk.BooleanVar(value=bool(self.auto_start))
@@ -444,98 +580,86 @@ class AI_Text_Completer_App:
             option_frame, 
             text="开机自启动", 
             variable=self.auto_start_var,
-            font=('Microsoft YaHei', 9),
+            font=('Segoe UI', 10),
             bg=COLORS['card_bg'],
             fg=COLORS['text'],
             selectcolor=COLORS['card_bg'],
-            activebackground=COLORS['card_bg']
+            activebackground=COLORS['card_bg'],
+            activeforeground=COLORS['text']
         )
         chk_auto_start.pack(anchor='w')
         
-        # 右侧：按钮
+        # 右侧：按钮组
         btn_frame = tk.Frame(bottom_frame, bg=COLORS['bg'])
         btn_frame.pack(side=tk.RIGHT)
         
-        self.btn_submit = ModernButton(btn_frame, text="保存设置", command=self.submit)
-        self.btn_submit.pack(side=tk.LEFT, padx=(0, 5))
+        self.btn_submit = ModernButton(btn_frame, text="💾 保存设置", command=self.submit)
+        self.btn_submit.pack(side=tk.LEFT, padx=(0, 10))
         
-        self.btn_minimize = ModernButton(btn_frame, text="最小化到托盘", command=self.minimize_to_tray)
-        self.btn_minimize.pack(side=tk.LEFT, padx=(0, 5))
+        self.btn_minimize = ModernButton(btn_frame, text="📥 最小化到托盘", 
+                                        command=self.minimize_to_tray,
+                                        button_type='secondary')
+        self.btn_minimize.pack(side=tk.LEFT, padx=(0, 10))
         
-        self.btn_logs = ModernButton(btn_frame, text="查看日志", command=self.open_logs)
+        self.btn_logs = ModernButton(btn_frame, text="📋 查看日志", 
+                                    command=self.open_logs,
+                                    button_type='success')
         self.btn_logs.pack(side=tk.LEFT)
         
         # 状态栏
-        status_frame = tk.Frame(self.master, bg=COLORS['primary'], height=25)
+        status_frame = tk.Frame(self.master, bg=COLORS['bg_secondary'], height=30)
         status_frame.pack(side=tk.BOTTOM, fill='x')
         status_frame.pack_propagate(False)
         
         self.status_label = tk.Label(
             status_frame,
             text="就绪 - 快捷键: Alt+` 补全, Alt+1 问答",
-            font=('Microsoft YaHei', 9),
-            bg=COLORS['primary'],
-            fg='white'
+            font=('Segoe UI', 9),
+            bg=COLORS['bg_secondary'],
+            fg=COLORS['text_secondary']
         )
-        self.status_label.pack(side=tk.LEFT, padx=10, pady=3)
+        self.status_label.pack(side=tk.LEFT, padx=20, pady=5)
     
     def create_form_row_compact(self, parent, label_text, attr_name, value, show=None):
         """创建紧凑的表单行"""
         row = tk.Frame(parent, bg=COLORS['card_bg'])
-        row.pack(fill='x', pady=2)
+        row.pack(fill='x', pady=(0, 10))
         
-        tk.Label(row, text=label_text, font=('Microsoft YaHei', 9), 
-                bg=COLORS['card_bg'], fg=COLORS['text'], width=10, anchor='w').pack(side=tk.LEFT)
+        tk.Label(row, text=label_text, font=('Segoe UI', 10),
+                bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=10, anchor='w').pack(side=tk.LEFT)
         
-        entry = ModernEntry(row, width=45, show=show if show else '')
-        entry.pack(side=tk.LEFT, fill='x', expand=True, padx=(5, 0))
+        entry = ModernEntry(row, width=50, show=show if show else '')
+        entry.pack(side=tk.LEFT, fill='x', expand=True, padx=(10, 0))
         entry.insert(0, str(value) if value else "")
         
         setattr(self, f"ent_{attr_name}", entry)
     
     def create_form_text_compact(self, parent, label_text, attr_name, value):
-        """创建紧凑的多行文本框表单行（用于API Key，支持多个key）"""
+        """创建紧凑的多行文本框表单行"""
         row = tk.Frame(parent, bg=COLORS['card_bg'])
-        row.pack(fill='x', pady=2)
+        row.pack(fill='x', pady=(0, 10))
         
-        tk.Label(row, text=label_text, font=('Microsoft YaHei', 9), 
-                bg=COLORS['card_bg'], fg=COLORS['text'], width=10, anchor='w').pack(side=tk.LEFT, anchor='n')
+        tk.Label(row, text=label_text, font=('Segoe UI', 10),
+                bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=10, anchor='w').pack(side=tk.LEFT, anchor='n', pady=(5, 0))
         
-        # 创建多行文本框
-        text_widget = scrolledtext.ScrolledText(
-            row,
-            height=3,
-            font=('Microsoft YaHei', 9),
-            relief='solid',
-            borderwidth=1,
-            highlightthickness=1,
-            highlightbackground=COLORS['border'],
-            highlightcolor=COLORS['primary'],
-            wrap=tk.WORD
-        )
-        text_widget.pack(side=tk.LEFT, fill='x', expand=True, padx=(5, 0))
+        text_widget = ModernText(row, height=2, wrap=tk.WORD)
+        text_widget.pack(side=tk.LEFT, fill='x', expand=True, padx=(10, 0))
         
-        # 插入值
         if value:
             text_widget.insert('1.0', str(value))
-        
-        # 添加提示标签
-        hint_label = tk.Label(row, text="(多key逗号分隔)", font=('Microsoft YaHei', 8), 
-                bg=COLORS['card_bg'], fg=COLORS['text_secondary'])
-        hint_label.pack(side=tk.LEFT, padx=(5, 0), anchor='s')
         
         setattr(self, f"txt_{attr_name}", text_widget)
     
     def create_param_input_compact(self, parent, label_text, attr_name, value, row, col):
         """创建紧凑的参数输入框"""
         frame = tk.Frame(parent, bg=COLORS['card_bg'])
-        frame.grid(row=row, column=col, padx=5, pady=2, sticky='ew')
+        frame.grid(row=row, column=col, padx=(0, 15), pady=5, sticky='ew')
         
-        tk.Label(frame, text=label_text, font=('Microsoft YaHei', 9), 
-                bg=COLORS['card_bg'], fg=COLORS['text'], width=12, anchor='w').pack(side=tk.LEFT)
+        tk.Label(frame, text=label_text, font=('Segoe UI', 9),
+                bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=12, anchor='w').pack(side=tk.LEFT)
         
         entry = ModernEntry(frame, width=15)
-        entry.pack(side=tk.LEFT, padx=(5, 0))
+        entry.pack(side=tk.LEFT, padx=(10, 0))
         entry.insert(0, value)
         
         setattr(self, f"ent_{attr_name}", entry)
@@ -549,7 +673,6 @@ class AI_Text_Completer_App:
         
     def open_logs(self):
         """打开日志查看器"""
-        # 在新线程中打开日志窗口，避免阻塞主窗口
         log_thread = threading.Thread(target=open_log_viewer, daemon=True)
         log_thread.start()
         
@@ -571,10 +694,8 @@ class AI_Text_Completer_App:
         try:
             exe_path = os.path.abspath(sys.argv[0])
             if exe_path.endswith('.py'):
-                # Python脚本添加 --minimized 参数
                 exe_path = f'pythonw "{exe_path}" --minimized'
             else:
-                # exe文件添加 --minimized 参数
                 exe_path = f'"{exe_path}" --minimized'
             
             key = winreg.OpenKey(
@@ -586,11 +707,9 @@ class AI_Text_Completer_App:
             
             if enable:
                 winreg.SetValueEx(key, "AI_Text_Completer", 0, winreg.REG_SZ, exe_path)
-                messagebox.showinfo("提示", "已设置开机自启动")
             else:
                 try:
                     winreg.DeleteValue(key, "AI_Text_Completer")
-                    messagebox.showinfo("提示", "已取消开机自启动")
                 except:
                     pass
             
@@ -606,14 +725,49 @@ class AI_Text_Completer_App:
                 self.platform = key
                 break
         print(f"[DEBUG] 切换到平台: {self.platform}")
-
+    
+    def refresh_models(self):
+        """刷新模型列表"""
+        api_key = self.txt_apikey.get('1.0', tk.END).strip()
+        base_url = self.ent_baseurl.get().strip()
+        platform = self.platform
+        
+        if not api_key:
+            messagebox.showwarning("提示", "请先填写API Key")
+            return
+        
+        if not base_url:
+            messagebox.showwarning("提示", "请先填写Base URL")
+            return
+        
+        if ',' in api_key:
+            api_key = api_key.split(',')[0].strip()
+        
+        old_text = self.status_label.cget("text")
+        self.status_label.config(text="正在获取模型列表...")
+        self.master.update()
+        
+        try:
+            models = APIProvider.get_available_models(platform, api_key, base_url)
+            
+            if models:
+                self.cmb_model['values'] = models
+                current_model = self.cmb_model.get()
+                if current_model not in models:
+                    self.cmb_model.set(models[0])
+                self.status_label.config(text=f"✓ 成功获取 {len(models)} 个模型")
+            else:
+                self.status_label.config(text="⚠ 未获取到模型列表")
+                
+        except Exception as e:
+            print(f"[ERROR] 获取模型列表失败: {e}")
+            self.status_label.config(text="⚠ 获取模型列表失败")
+        
+        self.master.after(3000, lambda: self.status_label.config(text=old_text))
+    
     def save_config(self):
         """保存配置"""
-        # 处理API Key，确保换行符被保留
         api_key_value = self.apikey
-        if api_key_value and '\n' in api_key_value:
-            # 多行API Key，保留换行符
-            api_key_value = api_key_value
         
         config = {
             "platform": self.platform,
@@ -625,7 +779,8 @@ class AI_Text_Completer_App:
             "model": self.model,
             "max_tokens": self.max_tokens,
             "auto_start": self.auto_start,
-            "system_prompt": self.system_prompt
+            "system_prompt": self.system_prompt,
+            "qa_system_prompt": self.qa_system_prompt
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
@@ -637,7 +792,6 @@ class AI_Text_Completer_App:
         """设置快捷键监听"""
         print("[DEBUG] 设置快捷键监听...")
         
-        # 补全快捷键 Alt+` (反引号)
         def complete_callback():
             print("\n[DEBUG] 补全快捷键被触发！")
             thread = threading.Thread(target=self.complete)
@@ -646,7 +800,6 @@ class AI_Text_Completer_App:
         
         keyboard.add_hotkey('alt+`', complete_callback, suppress=True)
         
-        # 问答快捷键 Alt+1
         def qa_callback():
             print("\n[DEBUG] 问答快捷键被触发！")
             thread = threading.Thread(target=self.qa)
@@ -658,38 +811,36 @@ class AI_Text_Completer_App:
 
     def submit(self):
         """保存设置"""
-        # 从多行文本框获取API Key（支持多个key，用逗号分隔）
         self.apikey = self.txt_apikey.get('1.0', tk.END).strip()
         self.base_url = self.ent_baseurl.get()
-        self.model = self.ent_model.get()
+        self.model = self.cmb_model.get()
         self.temperature = float(self.ent_temperature.get())
         self.complete_number = int(self.ent_number.get())
         self.max_tokens = int(self.ent_maxtokens.get())
         self.https_proxy = self.ent_proxy.get()
         self.auto_start = self.auto_start_var.get()
         self.system_prompt = self.txt_prompt.get('1.0', tk.END).strip()
+        self.qa_system_prompt = self.txt_qa_prompt.get('1.0', tk.END).strip()
         
         os.environ["https_proxy"] = self.https_proxy
         
-        # 重新初始化负载均衡器
         from api_provider import APIProvider
         APIProvider.init_load_balancer(self.apikey)
         
-        # 检查是否配置了多个key
         key_count = len([k for k in self.apikey.split(',') if k.strip()])
         if key_count > 1:
-            status_text = f"已配置 {key_count} 个API Key（负载均衡）"
+            status_text = f"✓ 已配置 {key_count} 个API Key（负载均衡）"
         else:
-            status_text = "设置已保存"
+            status_text = "✓ 设置已保存"
         
         self.save_config()
         self.set_auto_start(self.auto_start)
         
-        self.btn_submit.config(text="保存成功!")
+        self.btn_submit.config(text="✓ 保存成功")
         self.status_label.config(text=status_text)
         
         def reset():
-            self.btn_submit.config(text="保存设置")
+            self.btn_submit.config(text="💾 保存设置")
             self.status_label.config(text="就绪 - 快捷键: Alt+` 补全, Alt+1 问答")
 
         self.master.after(1500, reset)
@@ -701,7 +852,6 @@ class AI_Text_Completer_App:
         while keyboard.is_pressed('ctrl') or keyboard.is_pressed('alt'):
             time.sleep(0.05)
         
-        # 保存当前剪贴板内容
         old_clipboard = pyperclip.paste()
         
         pyperclip.copy('')
@@ -712,15 +862,12 @@ class AI_Text_Completer_App:
         print(f"[DEBUG] 获取到文本: '{original_text}'")
         
         if not original_text:
-            # 恢复剪贴板
             pyperclip.copy(old_clipboard)
             return
         
-        # 移动光标到文本末尾，并删除可能输入的'g'
         keyboard.press_and_release('end')
         time.sleep(0.1)
         
-        # 尝试删除可能输入的g字符
         keyboard.press_and_release('shift+left')
         time.sleep(0.1)
         pyperclip.copy('')
@@ -752,42 +899,34 @@ class AI_Text_Completer_App:
                 system_prompt=self.system_prompt
             )
 
-            # 收集所有生成的文本
             for g in generate():
                 if keyboard.is_pressed('ctrl'):
                     break
                 print(g, end="")
                 complete_text += g
             
-            # 使用剪贴板粘贴方式输出（更可靠）
             if complete_text:
                 pyperclip.copy(complete_text)
                 time.sleep(0.1)
                 keyboard.press_and_release('ctrl+v')
                 time.sleep(0.1)
-                # 恢复原始剪贴板内容
                 pyperclip.copy(old_clipboard)
                 
-                # 记录日志
                 usage_logger.log_completion(original_text, complete_text, self.model, self.platform)
                 
         except Exception as e:
             print(f"[ERROR] API调用失败: {e}")
-            # 恢复剪贴板
             pyperclip.copy(old_clipboard)
             messagebox.showerror("错误", f"API调用失败: {e}")
-            # 记录错误日志
             usage_logger.log_completion(original_text, f"请求失败: {e}", self.model, self.platform)
 
     def qa(self):
         """执行问答"""
         print("[DEBUG] qa函数开始执行...")
         
-        # 等待所有键释放
         while keyboard.is_pressed('ctrl') or keyboard.is_pressed('alt'):
             time.sleep(0.05)
         
-        # 复制选中的文本
         pyperclip.copy('')
         keyboard.press_and_release('ctrl+c')
         time.sleep(0.2)
@@ -799,21 +938,10 @@ class AI_Text_Completer_App:
             messagebox.showwarning("提示", "请先选中要提问的文字")
             return
         
-        # 打开独立的问答窗口
         result_queue = open_qa_window(question)
         
-        # 构建问答专用的system_prompt
-        qa_system_prompt = f"""{self.system_prompt}
-
-【问答模式】
-请针对用户的问题给出详细、准确的回答。
-回答应当：
-1. 直接回答问题，不要添加无关内容
-2. 条理清晰，层次分明
-3. 如果问题不清晰，可以要求用户补充信息
-"""
+        qa_prompt = self.qa_system_prompt if self.qa_system_prompt else self.system_prompt
         
-        # 在后台线程中调用API
         def do_qa():
             try:
                 message_history = []
@@ -828,31 +956,26 @@ class AI_Text_Completer_App:
                     presence_penalty=0,
                     max_tokens=self.max_tokens,
                     complete_number=self.complete_number * 2,
-                    system_prompt=qa_system_prompt,
-                    add_punctuation_rules=False  # 问答模式不添加衔接符号
+                    system_prompt=qa_prompt,
+                    add_punctuation_rules=False
                 )
                 
-                # 收集完整回答
                 answer_parts = []
                 for g in generate():
                     answer_parts.append(g)
                 
                 answer_text = ''.join(answer_parts)
                 
-                # 将结果放入队列，问答窗口会自动获取
                 result_queue.put(answer_text)
                 
-                # 记录日志
                 usage_logger.log_qa(question, answer_text, self.model, self.platform)
                 
             except Exception as e:
                 print(f"[ERROR] 问答API调用失败: {e}")
                 error_msg = f"请求失败: {e}"
                 result_queue.put(error_msg)
-                # 记录错误日志
                 usage_logger.log_qa(question, error_msg, self.model, self.platform)
         
-        # 启动API请求线程
         api_thread = threading.Thread(target=do_qa, daemon=True)
         api_thread.start()
 

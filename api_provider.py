@@ -146,7 +146,7 @@ class APIProvider:
     def get_api_stats(cls):
         """
         获取API key的使用统计信息
-        
+
         :return: 统计信息列表
         """
         balancer = get_load_balancer()
@@ -156,11 +156,101 @@ class APIProvider:
     def has_multiple_keys(cls) -> bool:
         """
         检查是否配置了多个API key
-        
+
         :return: 是否配置了多个key
         """
         balancer = get_load_balancer()
         return balancer.get_keys_count() > 1
+    
+    @classmethod
+    def get_available_models(cls, platform, api_key, base_url):
+        """
+        获取指定平台的可用模型列表
+
+        :param platform: 平台标识符
+        :param api_key: API密钥
+        :param base_url: API基础URL
+        :return: 模型列表
+        """
+        if platform == "openai":
+            # 使用 http.client 调用 ChatAnywhere API 获取模型列表
+            try:
+                import http.client
+                import json
+                
+                # 解析 base_url 获取主机和路径
+                if base_url.startswith('https://'):
+                    host = base_url[8:].split('/')[0]
+                else:
+                    host = base_url.split('/')[0]
+                
+                # 构建模型列表API路径
+                if "/chat/completions" in base_url:
+                    path = base_url.replace('https://' + host, '')
+                    path = path.replace('/chat/completions', '/models')
+                else:
+                    path = "/v1/models"
+                
+                print(f"[DEBUG] 尝试获取模型列表，主机: {host}, 路径: {path}")
+                
+                # 创建连接
+                conn = http.client.HTTPSConnection(host, timeout=5)
+                
+                # 构建请求头
+                headers = {
+                    'Authorization': f'Bearer {api_key}'
+                }
+                
+                # 发送请求
+                conn.request("GET", path, '', headers)
+                
+                # 获取响应
+                res = conn.getresponse()
+                data = res.read()
+                conn.close()
+                
+                print(f"[DEBUG] API响应状态码: {res.status}")
+                print(f"[DEBUG] API响应内容: {data.decode('utf-8')[:500]}...")
+                
+                if res.status == 200:
+                    # 解析响应
+                    response_data = json.loads(data.decode('utf-8'))
+                    models = [model['id'] for model in response_data.get('data', [])]
+                    print(f"[DEBUG] 获取到模型: {models}")
+                    return models
+                else:
+                    # 如果API调用失败，返回默认模型列表
+                    print(f"[DEBUG] API调用失败，使用默认模型")
+                    return [
+                        "gpt-3.5-turbo",
+                        "gpt-3.5-turbo-0613",
+                        "gpt-3.5-turbo-1106",
+                        "gpt-4",
+                        "gpt-4-0613",
+                        "gpt-4-1106-preview",
+                        "gpt-4-turbo",
+                        "gpt-4-turbo-preview",
+                        "gpt-4o",
+                        "gpt-4o-mini"
+                    ]
+            except Exception as e:
+                # 异常时返回默认模型列表
+                print(f"[ERROR] 获取模型列表异常: {e}")
+                return [
+                    "gpt-3.5-turbo",
+                    "gpt-3.5-turbo-0613",
+                    "gpt-3.5-turbo-1106",
+                    "gpt-4",
+                    "gpt-4-0613",
+                    "gpt-4-1106-preview",
+                    "gpt-4-turbo",
+                    "gpt-4-turbo-preview",
+                    "gpt-4o",
+                    "gpt-4o-mini"
+                ]
+        else:
+            # 其他平台返回默认模型
+            return ["default"]
 
 
 # 便捷函数
