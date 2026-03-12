@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI文本助手</string>
+    
+    <!-- 无障碍服务 -->
+    <string name="accessibility_service_label">AI文本助手 - 智能补全与问答</string>
+    <string name="accessibility_service_description">
+        此服务用于检测文本选择和复制操作，以提供AI智能补全和问答功能。
+        
+        功能说明：
+        • 检测文本选择事件
+        • 检测复制操作
+        • 显示浮动操作按钮
+        • 调用AI API进行文本处理
+        
+        需要此权限才能在其他应用中检测您的操作。
+    </string>
+    
+    <!-- 主界面 -->
+    <string name="welcome_title">欢迎使用 AI文本助手</string>
+    <string name="welcome_subtitle">智能文本补全与问答工具</string>
+    <string name="service_status">服务状态</string>
+    <string name="service_enabled">已启用</string>
+    <string name="service_disabled">未启用</string>
+    <string name="enable_service">启用无障碍服务</string>
+    <string name="open_settings">打开设置</string>
+    <string name="how_to_use">使用说明</string>
+    
+    <!-- 使用说明 -->
+    <string name="usage_title">如何使用</string>
+    <string name="usage_step1">1. 启用无障碍服务</string>
+    <string name="usage_step1_desc">点击"启用无障碍服务"按钮，在系统设置中开启AI文本助手</string>
+    <string name="usage_step2">2. 配置API设置</string>
+    <string name="usage_step2_desc">在设置中配置您的API Key和模型参数</string>
+    <string name="usage_step3">3. 使用功能</string>
+    <string name="usage_step3_desc">在任何应用中选中文本，点击浮动按钮选择补全或问答</string>
+    
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="api_settings">API设置</string>
+    <string name="api_key">API Key</string>
+    <string name="api_key_hint">请输入您的API Key</string>
+    <string name="base_url">Base URL</string>
+    <string name="base_url_hint">https://api.openai.com/v1/chat/completions</string>
+    <string name="model">模型</string>
+    <string name="model_hint">gpt-3.5-turbo</string>
+    <string name="proxy_settings">代理设置（可选）</string>
+    <string name="proxy_url">代理地址</string>
+    <string name="proxy_hint">http://proxy.example.com:8080</string>
+    
+    <!-- 参数设置 -->
+    <string name="parameter_settings">参数设置</string>
+    <string name="temperature">Temperature</string>
+    <string name="temperature_summary">控制生成文本的随机性 (0.0-2.0)</string>
+    <string name="max_tokens">最大Token数</string>
+    <string name="max_tokens_summary">生成文本的最大长度</string>
+    <string name="complete_number">补全字数</string>
+    <string name="complete_number_summary">补全功能的字数上限</string>
+    
+    <!-- 提示词设置 -->
+    <string name="prompt_settings">提示词设置</string>
+    <string name="complete_prompt">补全提示词</string>
+    <string name="complete_prompt_hint">你是一个AI文本补全助手...</string>
+    <string name="qa_prompt">问答提示词</string>
+    <string name="qa_prompt_hint">你是一个AI问答助手...</string>
+    
+    <!-- 功能设置 -->
+    <string name="feature_settings">功能设置</string>
+    <string name="show_floating_button">显示浮动按钮</string>
+    <string name="auto_copy_result">自动复制结果</string>
+    <string name="vibrate_on_trigger">触发时振动</string>
+    
+    <!-- 浮动按钮 -->
+    <string name="complete">补全</string>
+    <string name="question_answer">问答</string>
+    <string name="cancel">取消</string>
+    <string name="copy">复制</string>
+    <string name="insert">插入</string>
+    
+    <!-- 对话框 -->
+    <string name="processing">处理中...</string>
+    <string name="please_wait">请稍候，AI正在生成回复</string>
+    <string name="result">结果</string>
+    <string name="error">错误</string>
+    <string name="network_error">网络错误，请检查网络连接</string>
+    <string name="api_error">API调用失败: %1$s</string>
+    <string name="no_text_selected">未检测到选中的文本</string>
+    <string name="save_success">保存成功</string>
+    
+    <!-- 关于 -->
+    <string name="about">关于</string>
+    <string name="version">版本 %1$s</string>
+    <string name="privacy_policy">隐私政策</string>
+    
+    <!-- 通知 -->
+    <string name="notification_channel_name">AI文本助手服务</string>
+    <string name="notification_channel_desc">保持服务在后台运行</string>
+    <string name="notification_title">AI文本助手正在运行</string>
+    <string name="notification_content">选中文本即可使用AI补全和问答功能</string>
+</resources>

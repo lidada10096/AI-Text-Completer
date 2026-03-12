@@ -1,13 +1,15 @@
 {
-  "platform": "openai",
-  "api_key": "your-api-key-1-here,your-api-key-2-here,your-api-key-3-here",
-  "base_url": "https://api.chatanywhere.tech/v1/chat/completions",
+  "platform": "",
+  "api_key": "",
+  "base_url": "",
   "https_proxy": "",
-  "temperature": 0.9,
-  "complete_number": 150,
-  "model": "gpt-3.5-turbo",
-  "max_tokens": 2000,
+  "temperature": null,
+  "complete_number": null,
+  "model": "",
+  "max_tokens": null,
   "auto_start": false,
-  "system_prompt": "你是一个AI文本补全助手，请根据用户输入的上下文进行智能补全。",
-  "qa_system_prompt": "你是一个AI问答助手，请针对用户的问题给出详细、准确的回答。\n\n回答要求：\n1. 直接回答问题，不要添加无关内容\n2. 条理清晰，层次分明\n3. 如果问题不清晰，可以要求用户补充信息"
+  "system_prompt": "",
+  "qa_system_prompt": "",
+  "hotkey_complete": "alt+`",
+  "hotkey_qa": "alt+1"
 }

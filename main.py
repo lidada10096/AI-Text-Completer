@@ -19,8 +19,19 @@ from qa_window import open_qa_window
 from logger import usage_logger
 from log_viewer import open_log_viewer
 
-# 配置文件路径
-CONFIG_FILE = 'config.json'
+# 配置文件路径 - 使用应用程序所在目录的绝对路径
+def get_config_path():
+    """获取配置文件的绝对路径"""
+    # 获取应用程序所在目录
+    if getattr(sys, 'frozen', False):
+        # 如果是打包后的exe，使用exe所在目录
+        app_dir = os.path.dirname(sys.executable)
+    else:
+        # 如果是脚本运行，使用脚本所在目录
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(app_dir, 'config.json')
+
+CONFIG_FILE = get_config_path()
 
 # 互斥体名称，用于防止多开
 MUTEX_NAME = "AI_Text_Completer_SingleInstance_Mutex"
@@ -83,19 +94,21 @@ COLORS = {
 
 
 def load_config():
-    """加载配置文件，如果不存在则创建默认配置"""
+    """加载配置文件，如果不存在则创建空配置模板"""
     default_config = {
-        "platform": "openai",
+        "platform": "",
         "api_key": "",
-        "base_url": "https://api.chatanywhere.tech/v1/chat/completions",
+        "base_url": "",
         "https_proxy": "",
-        "temperature": 0.9,
-        "complete_number": 150,
-        "model": "gpt-3.5-turbo",
-        "max_tokens": 2000,
+        "temperature": None,
+        "complete_number": None,
+        "model": "",
+        "max_tokens": None,
         "auto_start": False,
-        "system_prompt": "你是一个AI文本补全助手，请根据用户输入的上下文进行智能补全。",
-        "qa_system_prompt": "你是一个AI问答助手，请针对用户的问题给出详细、准确的回答。\n\n回答要求：\n1. 直接回答问题，不要添加无关内容\n2. 条理清晰，层次分明\n3. 如果问题不清晰，可以要求用户补充信息"
+        "system_prompt": "",
+        "qa_system_prompt": "",
+        "hotkey_complete": "alt+`",
+        "hotkey_qa": "alt+1"
     }
     
     if not os.path.exists(CONFIG_FILE):
@@ -140,6 +153,8 @@ max_tokens = config.get("max_tokens")
 auto_start = config.get("auto_start")
 system_prompt = config.get("system_prompt")
 qa_system_prompt = config.get("qa_system_prompt")
+hotkey_complete = config.get("hotkey_complete", "alt+`")
+hotkey_qa = config.get("hotkey_qa", "alt+1")
 
 # 设置代理环境变量
 if https_proxy:
@@ -285,7 +300,10 @@ class SystemTray:
         self.app = app
         self.hwnd = None
         self.icon = None
-        self.tooltip = "AI Text Completer - Alt+` 补全 | Alt+1 问答"
+        # 动态生成提示文本
+        complete_key = app.hotkey_complete if app.hotkey_complete else "alt+`"
+        qa_key = app.hotkey_qa if app.hotkey_qa else "alt+1"
+        self.tooltip = f"AI Text Completer - {complete_key} 补全 | {qa_key} 问答"
         
     def create_window(self):
         """创建系统托盘窗口"""
@@ -364,6 +382,18 @@ class SystemTray:
         elif cmd == 1002:
             self.app.quit()
             
+    def update_tooltip(self, complete_key, qa_key):
+        """更新托盘提示文本"""
+        self.tooltip = f"AI Text Completer - {complete_key} 补全 | {qa_key} 问答"
+        # 如果托盘图标已创建，更新提示
+        if self.hwnd and self.icon:
+            try:
+                flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE | win32gui.NIF_TIP
+                nid = (self.hwnd, 0, flags, win32con.WM_USER + 20, self.icon, self.tooltip)
+                win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
+            except Exception as e:
+                print(f"[ERROR] 更新托盘提示失败: {e}")
+
     def destroy(self):
         """销毁托盘图标"""
         if self.hwnd:
@@ -376,18 +406,28 @@ class AI_Text_Completer_App:
     def __init__(self, master):
         self.master = master
         self.master.title("AI Text Completer")
-        self.master.geometry("1200x620")
         self.master.configure(bg=COLORS['bg'])
-        self.master.resizable(False, False)
-        
-        # 居中显示
-        self.master.update_idletasks()
-        width = self.master.winfo_width()
-        height = self.master.winfo_height()
-        x = (self.master.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.master.winfo_screenheight() // 2) - (height // 2)
-        self.master.geometry(f"{width}x{height}+{x}+{y}")
-        
+        self.master.resizable(True, True)
+
+        # 获取屏幕尺寸
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+
+        # 根据屏幕尺寸计算合适的窗口大小
+        # 默认窗口占屏幕的85%，但不超过1280x800，不小于1000x650
+        default_width = min(int(screen_width * 0.85), 1280)
+        default_height = min(int(screen_height * 0.85), 800)
+        default_width = max(default_width, 1000)
+        default_height = max(default_height, 650)
+
+        # 设置最小窗口大小，确保所有内容都能显示
+        self.master.minsize(1000, 650)
+
+        # 设置默认窗口大小并居中
+        x = (screen_width - default_width) // 2
+        y = (screen_height - default_height) // 2
+        self.master.geometry(f"{default_width}x{default_height}+{x}+{y}")
+
         # 前台显示
         self.master.lift()
         self.master.attributes('-topmost', True)
@@ -405,6 +445,8 @@ class AI_Text_Completer_App:
         self.auto_start = auto_start
         self.system_prompt = system_prompt
         self.qa_system_prompt = qa_system_prompt
+        self.hotkey_complete = hotkey_complete
+        self.hotkey_qa = hotkey_qa
         
         # 保存问答窗口引用
         self.qa_windows = []
@@ -435,38 +477,54 @@ class AI_Text_Completer_App:
         return '--minimized' in sys.argv or '-m' in sys.argv
         
     def create_ui(self):
-        """创建现代化双列UI界面"""
-        # 主容器
+        """创建现代化双列UI界面（自适应布局）"""
+        # 获取屏幕尺寸用于自适应计算
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+
+        # 根据屏幕尺寸计算自适应参数
+        # 小屏幕(<1400x900): 紧凑模式, 大屏幕: 舒适模式
+        is_small_screen = screen_width < 1400 or screen_height < 900
+
+        # 边距和间距自适应
+        main_padding = 10 if is_small_screen else 15
+        card_padding = 8 if is_small_screen else 12
+        widget_spacing = 5 if is_small_screen else 8
+
+        # 主容器 - 使用更小的边距
         main_frame = tk.Frame(self.master, bg=COLORS['bg'])
-        main_frame.pack(fill='both', expand=True, padx=20, pady=10)
-        
-        # 标题区域
+        main_frame.pack(fill='both', expand=True, padx=main_padding, pady=main_padding//2)
+
+        # 标题区域 - 更紧凑
         title_frame = tk.Frame(main_frame, bg=COLORS['bg'])
-        title_frame.pack(fill='x', pady=(0, 10))
-        
-        tk.Label(title_frame, text="AI Text Completer", 
-                font=('Segoe UI', 20, 'bold'), 
+        title_frame.pack(fill='x', pady=(0, widget_spacing))
+
+        title_font_size = 16 if is_small_screen else 20
+        tk.Label(title_frame, text="AI Text Completer",
+                font=('Segoe UI', title_font_size, 'bold'),
                 bg=COLORS['bg'], fg=COLORS['primary']).pack()
-        
-        tk.Label(title_frame, text="智能文本补全与问答助手", 
-                font=('Segoe UI', 11), 
-                bg=COLORS['bg'], fg=COLORS['text_secondary']).pack(pady=(3, 0))
-        
-        # 快捷键提示
-        shortcut_text = "Alt+`  文本补全  •  Alt+1  AI问答  •  长按Ctrl  停止生成"
-        tk.Label(title_frame, text=shortcut_text, 
-                font=('Segoe UI', 9), 
-                bg=COLORS['bg'], fg=COLORS['text_muted']).pack(pady=(5, 0))
-        
-        # 双列布局容器
+
+        subtitle_font_size = 10 if is_small_screen else 11
+        tk.Label(title_frame, text="智能文本补全与问答助手",
+                font=('Segoe UI', subtitle_font_size),
+                bg=COLORS['bg'], fg=COLORS['text_secondary']).pack(pady=(2, 0))
+
+        # 快捷键提示（动态显示配置的快捷键）
+        complete_key = self.hotkey_complete if self.hotkey_complete else "alt+`"
+        qa_key = self.hotkey_qa if self.hotkey_qa else "alt+1"
+        shortcut_text = f"{complete_key}  文本补全  •  {qa_key}  AI问答  •  长按Ctrl  停止生成"
+        self.lbl_shortcut = tk.Label(title_frame, text=shortcut_text,
+                font=('Segoe UI', 9),
+                bg=COLORS['bg'], fg=COLORS['text_muted'])
+        self.lbl_shortcut.pack(pady=(3, 0))
+
+        # 双列布局容器 - 使用pack替代grid以获得更好的自适应
         content_frame = tk.Frame(main_frame, bg=COLORS['bg'])
-        content_frame.pack(fill='both', expand=True, pady=(0, 10))
-        content_frame.grid_columnconfigure(0, weight=1)
-        content_frame.grid_columnconfigure(1, weight=1)
-        
+        content_frame.pack(fill='both', expand=True, pady=(0, widget_spacing))
+
         # 左列 - API设置和参数
         left_column = tk.Frame(content_frame, bg=COLORS['bg'])
-        left_column.grid(row=0, column=0, sticky='nsew', padx=(0, 10))
+        left_column.pack(side=tk.LEFT, fill='both', expand=True, padx=(0, widget_spacing))
         
         # API设置区域
         api_card = CardFrame(left_column)
@@ -482,16 +540,16 @@ class AI_Text_Completer_App:
                 bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=10, anchor='w').pack(side=tk.LEFT)
         
         self.platform_list = APIProvider.get_platform_names()
-        self.platform_var = tk.StringVar(value=self.platform if self.platform else "openai")
+        self.platform_var = tk.StringVar(value=self.platform if self.platform else "")
         
-        self.cmb_platform = ttk.Combobox(platform_frame, values=list(self.platform_list.values()), 
+        self.cmb_platform = ttk.Combobox(platform_frame, values=list(self.platform_list.values()),
                                          state="readonly", width=25, font=('Segoe UI', 10))
         self.cmb_platform.pack(side=tk.LEFT, padx=(10, 0))
         
         if self.platform and self.platform in self.platform_list:
             self.cmb_platform.set(self.platform_list[self.platform])
         else:
-            self.cmb_platform.set(list(self.platform_list.values())[0])
+            self.cmb_platform.set("")
         
         self.cmb_platform.bind('<<ComboboxSelected>>', self.on_platform_changed)
         
@@ -508,19 +566,19 @@ class AI_Text_Completer_App:
         tk.Label(model_frame, text="模型", font=('Segoe UI', 10),
                 bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=10, anchor='w').pack(side=tk.LEFT)
         
-        self.model_var = tk.StringVar(value=self.model if self.model else "gpt-3.5-turbo")
-        self.cmb_model = ttk.Combobox(model_frame, textvariable=self.model_var, 
+        self.model_var = tk.StringVar(value=self.model if self.model else "")
+        self.cmb_model = ttk.Combobox(model_frame, textvariable=self.model_var,
                                      state="normal", width=32, font=('Segoe UI', 10))
         self.cmb_model.pack(side=tk.LEFT, padx=(10, 0), fill='x', expand=True)
-        
-        self.btn_refresh_models = ModernButton(model_frame, text="刷新", 
+
+        self.btn_refresh_models = ModernButton(model_frame, text="刷新",
                                            command=self.refresh_models, width=8,
                                            button_type='secondary')
         self.btn_refresh_models.pack(side=tk.LEFT, padx=(10, 0))
-        
-        # 初始加载默认模型
-        self.cmb_model['values'] = ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"]
-        self.cmb_model.set(self.model if self.model else "gpt-3.5-turbo")
+
+        # 初始加载模型列表（空列表，等待用户刷新）
+        self.cmb_model['values'] = []
+        self.cmb_model.set(self.model if self.model else "")
         
         # 参数设置区域
         param_card = CardFrame(left_column)
@@ -532,18 +590,33 @@ class AI_Text_Completer_App:
         params_grid.pack(fill='x')
         
         # 2x2网格布局
-        self.create_param_input_compact(params_grid, "Temperature", "temperature", 
-                                       str(self.temperature) if self.temperature else "0.9", 0, 0)
-        self.create_param_input_compact(params_grid, "补全字数", "number", 
-                                       str(self.complete_number) if self.complete_number else "150", 0, 1)
-        self.create_param_input_compact(params_grid, "Max Tokens", "maxtokens", 
-                                       str(self.max_tokens) if self.max_tokens else "2000", 1, 0)
-        self.create_param_input_compact(params_grid, "代理设置", "proxy", 
-                                       str(self.https_proxy) if self.https_proxy else "", 1, 1)
-        
+        self.create_param_input_compact(params_grid, "Temperature", "temperature",
+                                       str(self.temperature) if self.temperature is not None else "", 0, 0)
+        self.create_param_input_compact(params_grid, "补全字数", "number",
+                                       str(self.complete_number) if self.complete_number is not None else "", 0, 1)
+        self.create_param_input_compact(params_grid, "Max Tokens", "maxtokens",
+                                       str(self.max_tokens) if self.max_tokens is not None else "", 1, 0)
+        self.create_param_input_compact(params_grid, "代理设置", "proxy",
+                                       str(self.https_proxy) if self.https_proxy is not None else "", 1, 1)
+
+        # 快捷键设置区域
+        hotkey_card = CardFrame(left_column)
+        hotkey_card.pack(fill='x', pady=(0, 10))
+
+        SectionLabel(hotkey_card, text="⌨️ 快捷键设置").pack(anchor='w', pady=(0, 12))
+
+        hotkey_grid = tk.Frame(hotkey_card, bg=COLORS['card_bg'])
+        hotkey_grid.pack(fill='x')
+
+        # 使用新的快捷键捕获组件
+        self.create_hotkey_input_compact(hotkey_grid, "补全快捷键", "hotkey_complete",
+                                        self.hotkey_complete if self.hotkey_complete else "alt+`", 0, 0)
+        self.create_hotkey_input_compact(hotkey_grid, "问答快捷键", "hotkey_qa",
+                                        self.hotkey_qa if self.hotkey_qa else "alt+1", 0, 1)
+
         # 右列 - 提示词设置
         right_column = tk.Frame(content_frame, bg=COLORS['bg'])
-        right_column.grid(row=0, column=1, sticky='nsew', padx=(10, 0))
+        right_column.pack(side=tk.LEFT, fill='both', expand=True, padx=(widget_spacing, 0))
         
         # 提示词设置区域
         prompt_card = CardFrame(right_column)
@@ -557,30 +630,35 @@ class AI_Text_Completer_App:
         
         self.txt_prompt = ModernText(prompt_card, height=6, wrap=tk.WORD)
         self.txt_prompt.pack(fill='x', pady=(0, 8))
-        self.txt_prompt.insert('1.0', str(self.system_prompt) if self.system_prompt else "")
-        
+        self.txt_prompt.insert('1.0', str(self.system_prompt) if self.system_prompt is not None else "")
+
         # 问答提示词
         tk.Label(prompt_card, text="问答提示词", font=('Segoe UI', 10, 'bold'),
                 bg=COLORS['card_bg'], fg=COLORS['text']).pack(anchor='w', pady=(0, 5))
-        
+
         self.txt_qa_prompt = ModernText(prompt_card, height=6, wrap=tk.WORD)
         self.txt_qa_prompt.pack(fill='x')
-        self.txt_qa_prompt.insert('1.0', str(self.qa_system_prompt) if self.qa_system_prompt else "")
-        
-        # 底部操作区域
+        self.txt_qa_prompt.insert('1.0', str(self.qa_system_prompt) if self.qa_system_prompt is not None else "")
+
+        # 底部操作区域 - 自适应紧凑布局
         bottom_frame = tk.Frame(main_frame, bg=COLORS['bg'])
-        bottom_frame.pack(fill='x', pady=(5, 0))
-        
-        # 左侧：开机自启动选项
-        option_frame = tk.Frame(bottom_frame, bg=COLORS['card_bg'], padx=12, pady=6)
-        option_frame.pack(side=tk.LEFT, fill='y')
-        
+        bottom_frame.pack(fill='x', pady=(widget_spacing, 0))
+
+        # 使用grid布局让底部区域更紧凑且自适应
+        bottom_frame.columnconfigure(0, weight=1)  # 左侧空白区域
+        bottom_frame.columnconfigure(1, weight=0)  # 复选框
+        bottom_frame.columnconfigure(2, weight=0)  # 按钮组
+
+        # 左侧：开机自启动选项 - 更紧凑
+        option_frame = tk.Frame(bottom_frame, bg=COLORS['card_bg'], padx=8, pady=4)
+        option_frame.grid(row=0, column=1, sticky='w', padx=(0, widget_spacing))
+
         self.auto_start_var = tk.BooleanVar(value=bool(self.auto_start))
         chk_auto_start = tk.Checkbutton(
-            option_frame, 
-            text="开机自启动", 
+            option_frame,
+            text="开机自启动",
             variable=self.auto_start_var,
-            font=('Segoe UI', 10),
+            font=('Segoe UI', 9),
             bg=COLORS['card_bg'],
             fg=COLORS['text'],
             selectcolor=COLORS['card_bg'],
@@ -588,37 +666,29 @@ class AI_Text_Completer_App:
             activeforeground=COLORS['text']
         )
         chk_auto_start.pack(anchor='w')
-        
-        # 右侧：按钮组
+
+        # 右侧：按钮组 - 紧凑排列
         btn_frame = tk.Frame(bottom_frame, bg=COLORS['bg'])
-        btn_frame.pack(side=tk.RIGHT)
-        
-        self.btn_submit = ModernButton(btn_frame, text="💾 保存设置", command=self.submit)
-        self.btn_submit.pack(side=tk.LEFT, padx=(0, 10))
-        
-        self.btn_minimize = ModernButton(btn_frame, text="📥 最小化到托盘", 
+        btn_frame.grid(row=0, column=2, sticky='e')
+
+        # 根据屏幕大小调整按钮文字和间距
+        btn_padx = 5 if is_small_screen else 8
+        btn_text_save = "保存" if is_small_screen else "💾 保存设置"
+        btn_text_minimize = "最小化" if is_small_screen else "📥 最小化到托盘"
+        btn_text_logs = "日志" if is_small_screen else "📋 查看日志"
+
+        self.btn_submit = ModernButton(btn_frame, text=btn_text_save, command=self.submit)
+        self.btn_submit.pack(side=tk.LEFT, padx=(0, btn_padx))
+
+        self.btn_minimize = ModernButton(btn_frame, text=btn_text_minimize,
                                         command=self.minimize_to_tray,
                                         button_type='secondary')
-        self.btn_minimize.pack(side=tk.LEFT, padx=(0, 10))
+        self.btn_minimize.pack(side=tk.LEFT, padx=(0, btn_padx))
         
-        self.btn_logs = ModernButton(btn_frame, text="📋 查看日志", 
+        self.btn_logs = ModernButton(btn_frame, text=btn_text_logs,
                                     command=self.open_logs,
                                     button_type='success')
         self.btn_logs.pack(side=tk.LEFT)
-        
-        # 状态栏
-        status_frame = tk.Frame(self.master, bg=COLORS['bg_secondary'], height=30)
-        status_frame.pack(side=tk.BOTTOM, fill='x')
-        status_frame.pack_propagate(False)
-        
-        self.status_label = tk.Label(
-            status_frame,
-            text="就绪 - 快捷键: Alt+` 补全, Alt+1 问答",
-            font=('Segoe UI', 9),
-            bg=COLORS['bg_secondary'],
-            fg=COLORS['text_secondary']
-        )
-        self.status_label.pack(side=tk.LEFT, padx=20, pady=5)
     
     def create_form_row_compact(self, parent, label_text, attr_name, value, show=None):
         """创建紧凑的表单行"""
@@ -654,18 +724,243 @@ class AI_Text_Completer_App:
         """创建紧凑的参数输入框"""
         frame = tk.Frame(parent, bg=COLORS['card_bg'])
         frame.grid(row=row, column=col, padx=(0, 15), pady=5, sticky='ew')
-        
+
         tk.Label(frame, text=label_text, font=('Segoe UI', 9),
                 bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=12, anchor='w').pack(side=tk.LEFT)
-        
+
         entry = ModernEntry(frame, width=15)
         entry.pack(side=tk.LEFT, padx=(10, 0))
         entry.insert(0, value)
-        
+
         setattr(self, f"ent_{attr_name}", entry)
-        
+
         parent.grid_columnconfigure(0, weight=1)
         parent.grid_columnconfigure(1, weight=1)
+
+    def create_hotkey_input_compact(self, parent, label_text, attr_name, value, row, col):
+        """创建带捕获功能的快捷键输入框（支持手动输入和按键捕获）"""
+        frame = tk.Frame(parent, bg=COLORS['card_bg'])
+        frame.grid(row=row, column=col, padx=(0, 15), pady=5, sticky='ew')
+
+        tk.Label(frame, text=label_text, font=('Segoe UI', 9),
+                bg=COLORS['card_bg'], fg=COLORS['text_secondary'], width=12, anchor='w').pack(side=tk.LEFT)
+
+        # 使用普通Entry并设置明确的颜色，确保文字可见
+        entry = tk.Entry(frame, width=12,
+                        font=('Segoe UI', 10),
+                        relief='flat',
+                        borderwidth=0,
+                        highlightthickness=2,
+                        highlightbackground=COLORS['border'],
+                        highlightcolor=COLORS['border_focus'],
+                        insertbackground=COLORS['text'],
+                        selectbackground=COLORS['primary'],
+                        selectforeground='white',
+                        bg=COLORS['bg_secondary'],
+                        fg=COLORS['text'])
+        entry.pack(side=tk.LEFT, padx=(10, 0))
+        entry.insert(0, value)
+
+        setattr(self, f"ent_{attr_name}", entry)
+
+        # 捕获按钮
+        btn_capture = ModernButton(frame, text="捕获", width=6,
+                                   command=lambda: self.capture_hotkey(attr_name),
+                                   button_type='secondary')
+        btn_capture.pack(side=tk.LEFT, padx=(5, 0))
+
+        parent.grid_columnconfigure(0, weight=1)
+        parent.grid_columnconfigure(1, weight=1)
+
+    def capture_hotkey(self, attr_name):
+        """捕获用户按下的快捷键"""
+        # 创建捕获对话框
+        dialog = tk.Toplevel(self.master)
+        dialog.title("捕获快捷键")
+        dialog.geometry("450x280")
+        dialog.configure(bg=COLORS['bg'])
+        dialog.resizable(False, False)
+        dialog.transient(self.master)
+        dialog.grab_set()
+
+        # 居中显示
+        dialog.update_idletasks()
+        x = self.master.winfo_x() + (self.master.winfo_width() - dialog.winfo_width()) // 2
+        y = self.master.winfo_y() + (self.master.winfo_height() - dialog.winfo_height()) // 2
+        dialog.geometry(f"+{x}+{y}")
+
+        # 标题
+        tk.Label(dialog, text="⌨️ 捕获快捷键",
+                font=('Segoe UI', 16, 'bold'),
+                bg=COLORS['bg'], fg=COLORS['primary']).pack(pady=(20, 10))
+
+        # 说明文本
+        tk.Label(dialog, text="请按下您想要的快捷键组合",
+                font=('Segoe UI', 11),
+                bg=COLORS['bg'], fg=COLORS['text']).pack(pady=(10, 5))
+
+        tk.Label(dialog, text="支持: Alt+`, Ctrl+Shift+G, F1, Ctrl+Alt+C 等",
+                font=('Segoe UI', 9),
+                bg=COLORS['bg'], fg=COLORS['text_secondary']).pack(pady=(0, 15))
+
+        # 捕获显示区域
+        capture_frame = tk.Frame(dialog, bg=COLORS['bg_secondary'], padx=20, pady=15)
+        capture_frame.pack(pady=10, padx=30, fill='x')
+
+        capture_var = tk.StringVar(value="等待按键...")
+        capture_label = tk.Label(capture_frame, textvariable=capture_var,
+                                font=('Segoe UI', 14, 'bold'),
+                                bg=COLORS['bg_secondary'],
+                                fg=COLORS['primary'])
+        capture_label.pack()
+
+        # 状态提示
+        status_label = tk.Label(dialog, text="按下任意快捷键组合...",
+                               font=('Segoe UI', 10),
+                               bg=COLORS['bg'], fg=COLORS['text_muted'])
+        status_label.pack(pady=10)
+
+        # 按钮区域
+        btn_frame = tk.Frame(dialog, bg=COLORS['bg'])
+        btn_frame.pack(pady=15)
+
+        # 存储捕获的按键
+        captured_key = {"value": None}
+        stop_capture = {"flag": False}
+
+        def update_capture_display(text):
+            """更新捕获显示"""
+            capture_var.set(text)
+
+        def start_keyboard_capture():
+            """使用keyboard库捕获按键"""
+            import threading
+
+            def capture_thread():
+                # 等待一小段时间让用户准备
+                import time
+                time.sleep(0.3)
+
+                # 使用keyboard的hook来捕获按键
+                recorded = []
+
+                def on_key(event):
+                    if stop_capture["flag"]:
+                        return False
+
+                    # 只处理按键按下事件
+                    if event.event_type != 'down':
+                        return True
+
+                    key = event.name.lower() if event.name else ""
+
+                    # 排除单独的修饰键
+                    if key in ['shift', 'ctrl', 'alt', 'left shift', 'right shift',
+                               'left ctrl', 'right ctrl', 'left alt', 'right alt',
+                               'left windows', 'right windows', 'command']:
+                        return True
+
+                    # 获取当前按下的修饰键
+                    modifiers = []
+                    if keyboard.is_pressed('ctrl') or keyboard.is_pressed('left ctrl') or keyboard.is_pressed('right ctrl'):
+                        modifiers.append('ctrl')
+                    if keyboard.is_pressed('alt') or keyboard.is_pressed('left alt') or keyboard.is_pressed('right alt'):
+                        modifiers.append('alt')
+                    if keyboard.is_pressed('shift') or keyboard.is_pressed('left shift') or keyboard.is_pressed('right shift'):
+                        modifiers.append('shift')
+
+                    # 构建快捷键字符串
+                    if modifiers:
+                        hotkey_str = '+'.join(modifiers) + '+' + key
+                    else:
+                        hotkey_str = key
+
+                    captured_key["value"] = hotkey_str
+
+                    # 在UI线程中更新显示
+                    dialog.after(0, lambda: update_capture_display(hotkey_str))
+                    dialog.after(0, lambda: status_label.config(
+                        text='✓ 快捷键已捕获！',
+                        fg=COLORS['success']
+                    ))
+
+                    # 立即更新主界面的输入框
+                    entry_widget = getattr(self, f"ent_{attr_name}", None)
+                    if entry_widget:
+                        dialog.after(0, lambda: (entry_widget.delete(0, tk.END), entry_widget.insert(0, hotkey_str)))
+
+                    # 停止监听
+                    stop_capture["flag"] = True
+                    return False
+
+                # 注册hook
+                hook = keyboard.hook(on_key)
+
+                # 等待捕获完成或对话框关闭
+                while not stop_capture["flag"] and dialog.winfo_exists():
+                    time.sleep(0.1)
+
+                # 清理hook
+                try:
+                    keyboard.unhook(hook)
+                except:
+                    pass
+
+            # 启动捕获线程
+            thread = threading.Thread(target=capture_thread, daemon=True)
+            thread.start()
+
+        def confirm():
+            """确认并保存快捷键"""
+            stop_capture["flag"] = True
+            if captured_key["value"]:
+                entry_widget = getattr(self, f"ent_{attr_name}", None)
+                if entry_widget:
+                    entry_widget.delete(0, tk.END)
+                    entry_widget.insert(0, captured_key["value"])
+            dialog.destroy()
+
+        def cancel():
+            """取消"""
+            stop_capture["flag"] = True
+            dialog.destroy()
+
+        # 按钮
+        btn_confirm = tk.Button(btn_frame, text="✓ 确定",
+                               command=confirm,
+                               font=('Segoe UI', 10, 'bold'),
+                               bg=COLORS['success'],
+                               fg='white',
+                               relief='flat',
+                               padx=20,
+                               pady=8,
+                               cursor='hand2',
+                               activebackground=COLORS['success_hover'],
+                               activeforeground='white',
+                               borderwidth=0)
+        btn_confirm.pack(side=tk.LEFT, padx=5)
+
+        btn_cancel = tk.Button(btn_frame, text="✗ 取消",
+                              command=cancel,
+                              font=('Segoe UI', 10, 'bold'),
+                              bg=COLORS['card_bg'],
+                              fg=COLORS['text'],
+                              relief='flat',
+                              padx=20,
+                              pady=8,
+                              cursor='hand2',
+                              activebackground=COLORS['card_hover'],
+                              activeforeground=COLORS['text'],
+                              borderwidth=0)
+        btn_cancel.pack(side=tk.LEFT, padx=5)
+
+        # 提示：也可以手动输入
+        tk.Label(dialog, text="提示：也可以直接在主界面输入框中手动输入快捷键",
+                font=('Segoe UI', 9),
+                bg=COLORS['bg'], fg=COLORS['text_muted']).pack(pady=(5, 0))
+
+        # 启动键盘捕获
+        dialog.after(100, start_keyboard_capture)
 
     def minimize_to_tray(self):
         """最小化到系统托盘"""
@@ -742,33 +1037,32 @@ class AI_Text_Completer_App:
         
         if ',' in api_key:
             api_key = api_key.split(',')[0].strip()
-        
-        old_text = self.status_label.cget("text")
-        self.status_label.config(text="正在获取模型列表...")
+
+        self.btn_refresh_models.config(text="获取中...", state='disabled')
         self.master.update()
-        
+
         try:
             models = APIProvider.get_available_models(platform, api_key, base_url)
-            
+
             if models:
                 self.cmb_model['values'] = models
                 current_model = self.cmb_model.get()
                 if current_model not in models:
                     self.cmb_model.set(models[0])
-                self.status_label.config(text=f"✓ 成功获取 {len(models)} 个模型")
+                self.btn_refresh_models.config(text="✓ 已刷新")
             else:
-                self.status_label.config(text="⚠ 未获取到模型列表")
-                
+                self.btn_refresh_models.config(text="⚠ 无模型")
+
         except Exception as e:
             print(f"[ERROR] 获取模型列表失败: {e}")
-            self.status_label.config(text="⚠ 获取模型列表失败")
-        
-        self.master.after(3000, lambda: self.status_label.config(text=old_text))
+            self.btn_refresh_models.config(text="✗ 失败")
+
+        self.master.after(3000, lambda: self.btn_refresh_models.config(text="刷新", state='normal'))
     
     def save_config(self):
         """保存配置"""
         api_key_value = self.apikey
-        
+
         config = {
             "platform": self.platform,
             "api_key": api_key_value,
@@ -780,7 +1074,9 @@ class AI_Text_Completer_App:
             "max_tokens": self.max_tokens,
             "auto_start": self.auto_start,
             "system_prompt": self.system_prompt,
-            "qa_system_prompt": self.qa_system_prompt
+            "qa_system_prompt": self.qa_system_prompt,
+            "hotkey_complete": self.hotkey_complete,
+            "hotkey_qa": self.hotkey_qa
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
@@ -788,60 +1084,112 @@ class AI_Text_Completer_App:
         except Exception as e:
             print(f"保存配置文件失败: {e}")
 
+    def update_shortcut_labels(self):
+        """更新界面上的快捷键提示文本"""
+        complete_key = self.hotkey_complete if self.hotkey_complete else "alt+`"
+        qa_key = self.hotkey_qa if self.hotkey_qa else "alt+1"
+
+        # 更新标题区域的快捷键提示
+        if hasattr(self, 'lbl_shortcut'):
+            shortcut_text = f"{complete_key}  文本补全  •  {qa_key}  AI问答  •  长按Ctrl  停止生成"
+            self.lbl_shortcut.config(text=shortcut_text)
+
+        # 更新系统托盘提示
+        if hasattr(self, 'tray'):
+            self.tray.update_tooltip(complete_key, qa_key)
+
     def setup_hotkey(self):
         """设置快捷键监听"""
         print("[DEBUG] 设置快捷键监听...")
-        
+
+        # 获取配置的快捷键，使用默认值作为回退
+        complete_hotkey = self.hotkey_complete if self.hotkey_complete else "alt+`"
+        qa_hotkey = self.hotkey_qa if self.hotkey_qa else "alt+1"
+
         def complete_callback():
-            print("\n[DEBUG] 补全快捷键被触发！")
+            print(f"\n[DEBUG] 补全快捷键 {complete_hotkey} 被触发！")
             thread = threading.Thread(target=self.complete)
             thread.daemon = True
             thread.start()
-        
-        keyboard.add_hotkey('alt+`', complete_callback, suppress=True)
-        
+
+        try:
+            keyboard.add_hotkey(complete_hotkey, complete_callback, suppress=True)
+            print(f"[DEBUG] 已绑定补全快捷键: {complete_hotkey}")
+        except Exception as e:
+            print(f"[ERROR] 绑定补全快捷键失败: {e}")
+
         def qa_callback():
-            print("\n[DEBUG] 问答快捷键被触发！")
+            print(f"\n[DEBUG] 问答快捷键 {qa_hotkey} 被触发！")
             thread = threading.Thread(target=self.qa)
             thread.daemon = True
             thread.start()
-        
-        keyboard.add_hotkey('alt+1', qa_callback, suppress=True)
-        print("[DEBUG] 快捷键监听已设置完成 (Alt+`:补全, Alt+1:问答)")
+
+        try:
+            keyboard.add_hotkey(qa_hotkey, qa_callback, suppress=True)
+            print(f"[DEBUG] 已绑定问答快捷键: {qa_hotkey}")
+        except Exception as e:
+            print(f"[ERROR] 绑定问答快捷键失败: {e}")
+
+        print(f"[DEBUG] 快捷键监听已设置完成 ({complete_hotkey}:补全, {qa_hotkey}:问答)")
 
     def submit(self):
         """保存设置"""
         self.apikey = self.txt_apikey.get('1.0', tk.END).strip()
-        self.base_url = self.ent_baseurl.get()
-        self.model = self.cmb_model.get()
-        self.temperature = float(self.ent_temperature.get())
-        self.complete_number = int(self.ent_number.get())
-        self.max_tokens = int(self.ent_maxtokens.get())
-        self.https_proxy = self.ent_proxy.get()
+        self.base_url = self.ent_baseurl.get().strip()
+        self.model = self.cmb_model.get().strip()
+
+        # 处理数值字段，空值则设为None
+        temp_str = self.ent_temperature.get().strip()
+        self.temperature = float(temp_str) if temp_str else None
+
+        num_str = self.ent_number.get().strip()
+        self.complete_number = int(num_str) if num_str else None
+
+        max_tokens_str = self.ent_maxtokens.get().strip()
+        self.max_tokens = int(max_tokens_str) if max_tokens_str else None
+
+        self.https_proxy = self.ent_proxy.get().strip()
         self.auto_start = self.auto_start_var.get()
         self.system_prompt = self.txt_prompt.get('1.0', tk.END).strip()
         self.qa_system_prompt = self.txt_qa_prompt.get('1.0', tk.END).strip()
-        
+
+        # 读取快捷键配置
+        self.hotkey_complete = self.ent_hotkey_complete.get().strip()
+        self.hotkey_qa = self.ent_hotkey_qa.get().strip()
+
+        # 更新platform（从下拉框选择中反向查找）
+        selected_platform_name = self.cmb_platform.get()
+        for key, name in self.platform_list.items():
+            if name == selected_platform_name:
+                self.platform = key
+                break
+
         os.environ["https_proxy"] = self.https_proxy
-        
+
         from api_provider import APIProvider
-        APIProvider.init_load_balancer(self.apikey)
-        
+        if self.apikey:
+            APIProvider.init_load_balancer(self.apikey)
+
         key_count = len([k for k in self.apikey.split(',') if k.strip()])
         if key_count > 1:
             status_text = f"✓ 已配置 {key_count} 个API Key（负载均衡）"
         else:
             status_text = "✓ 设置已保存"
-        
+
         self.save_config()
         self.set_auto_start(self.auto_start)
-        
+
+        # 更新界面上的快捷键提示
+        self.update_shortcut_labels()
+
+        # 重新绑定快捷键（如果修改了快捷键）
+        keyboard.unhook_all_hotkeys()
+        self.setup_hotkey()
+
         self.btn_submit.config(text="✓ 保存成功")
-        self.status_label.config(text=status_text)
-        
+
         def reset():
             self.btn_submit.config(text="💾 保存设置")
-            self.status_label.config(text="就绪 - 快捷键: Alt+` 补全, Alt+1 问答")
 
         self.master.after(1500, reset)
 
@@ -940,7 +1288,7 @@ class AI_Text_Completer_App:
         
         result_queue = open_qa_window(question)
         
-        qa_prompt = self.qa_system_prompt if self.qa_system_prompt else self.system_prompt
+        qa_prompt = self.qa_system_prompt if self.qa_system_prompt is not None else ""
         
         def do_qa():
             try:

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用主题 -->
+    <style name="Theme.AITextAssistant" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- 主色调 -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorPrimaryContainer">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/text_primary</item>
+        <item name="colorAccent">@color/accent</item>
+        
+        <!-- 背景色 -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/background_secondary</item>
+        <item name="colorSurfaceVariant">@color/card_background</item>
+        
+        <!-- 文字色 -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        
+        <!-- 状态栏 -->
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        
+        <!-- 组件样式 -->
+        <item name="materialButtonStyle">@style/Widget.AITextAssistant.Button</item>
+        <item name="textInputStyle">@style/Widget.AITextAssistant.TextInput</item>
+        <item name="cardViewStyle">@style/Widget.AITextAssistant.Card</item>
+    </style>
+    
+    <!-- 按钮样式 -->
+    <style name="Widget.AITextAssistant.Button" parent="Widget.Material3.Button">
+        <item name="android:backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+    
+    <!-- 次要按钮 -->
+    <style name="Widget.AITextAssistant.Button.Secondary">
+        <item name="android:backgroundTint">@color/card_background</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+    
+    <!-- 成功按钮 -->
+    <style name="Widget.AITextAssistant.Button.Success">
+        <item name="android:backgroundTint">@color/success</item>
+    </style>
+    
+    <!-- 输入框样式 -->
+    <style name="Widget.AITextAssistant.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/border_focus</item>
+        <item name="boxBackgroundColor">@color/background_secondary</item>
+        <item name="hintTextColor">@color/text_muted</item>
+    </style>
+    
+    <!-- 卡片样式 -->
+    <style name="Widget.AITextAssistant.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/card_background</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="contentPadding">16dp</item>
+    </style>
+    
+    <!-- 对话框样式 -->
+    <style name="Theme.AITextAssistant.Dialog" parent="Theme.Material3.Dark.Dialog">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="android:colorBackground">@color/background_secondary</item>
+        <item name="colorSurface">@color/card_background</item>
+    </style>
+    
+    <!-- 浮动窗口样式 -->
+    <style name="FloatingWindowTheme" parent="Theme.Material3.Dark.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

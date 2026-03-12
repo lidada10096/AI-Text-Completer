@@ -187,19 +187,15 @@ class QAWindowApp:
         self.txt_answer.insert('1.0', "🤔 正在思考，请稍候...")
         self.txt_answer.config(state='disabled')
         
-        # 底部按钮区域
+        # 底部状态区域
         bottom_frame = tk.Frame(main_frame, bg=COLORS['bg'])
         bottom_frame.pack(fill='x')
-        
-        ModernButton(bottom_frame, text="✕ 关闭", 
-                    command=self.window.destroy,
-                    button_type='secondary').pack(side=tk.LEFT)
-        
+
         # 状态标签
-        self.lbl_status = tk.Label(bottom_frame, text="", 
+        self.lbl_status = tk.Label(bottom_frame, text="",
                                   font=('Segoe UI', 10),
                                   bg=COLORS['bg'], fg=COLORS['success'])
-        self.lbl_status.pack(side=tk.RIGHT)
+        self.lbl_status.pack(side=tk.LEFT)
         
     def check_queue(self):
         """检查队列中是否有回答"""
